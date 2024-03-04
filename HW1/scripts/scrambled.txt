@@ -214,3 +214,4 @@ $$B_{213} = A_{213} \oplus B_{198} \oplus B_{197} = 0 \oplus 1 \oplus 0 = 1$$
 $$B_{214} = A_{214} \oplus B_{199} \oplus B_{198} = 1 \oplus 0 \oplus 1 = 0$$
 $$B_{215} = A_{215} \oplus B_{200} \oplus B_{199} = 1 \oplus 0 \oplus 0 = 1$$
 $$B_{216} = A_{216} \oplus B_{201} \oplus B_{200} = 1 \oplus 1 \oplus 0 = 0$$
+

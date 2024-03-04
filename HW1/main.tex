@@ -550,21 +550,43 @@ $$B_{216} = A_{216} \oplus B_{201} \oplus B_{200} = 1 \oplus 1 \oplus 0 = 0$$
 \section{Часть 2. Передача кодированного сообщения по каналу связи}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{image/table3.png}
+    \includegraphics[width=\textwidth]{image/nf-1.png}
+    \caption{Реальный сигнал NRZ кода}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{image/nf-2.png}
+    \caption{Реальный сигнал RZ кода}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{image/nf-3.jpg}
+    \caption{Реальный сигнал M2 кода}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{image/nf-4.png}
+    \caption{Реальный сигнал 4B/5B NRZ кода}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{image/nf-5.png}
+    \caption{Реальный сигнал скремблированного NRZ кода}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{image/table4.png}
 \end{figure}
 
 Вывод:
-Для данного сообщения и помех в канале связи лучше всего подходит NRZ код, так как у него наименьшая необходимая полоса пропускания. Но у него довольно скомные результаты в противодействии помехам.
+Для данного сигнала лучше подходит скремблирование NRZ кода, так как у него наименьшая полоса пропускания. Однако оно проигрывает 4B/5B коду по помехоустойчивости.
+
+NRZ код, тоже имеет небольшую необходимую полосу пропускания. Но у него довольно скомные результаты в противодействии помехам.
 
 В противодействии шуму и граничному напряжению лучше всего себя показал M2 код, но за это приходится платить довольно широкой полосой пропускания.
 
 С рассинхронизацей лучше всех справился 4B/5B код, также у него средняя величина полосы пропускания.
 
-Скремблирование уступает 4B/5B коду по помехоустойчивости, но имеет меньщую полосу пропускания. 
-
 RZ код уступает M2 по всем показателям и обладает самой широкой полосой пропускания.
-
-
-
 
 \end{document}
