@@ -53,7 +53,7 @@
 \vspace{6cm}
 \begin{center}
     г. Санкт-Петербург\\
-    2023г.
+    2024г.
 \end{center}
 
 \newpage
@@ -65,13 +65,670 @@
 
 В процессе выполнения домашнего задания выполняются наблюдения за передаваемым трафиком с компьютера пользователя в Интернет и в обратном направлении. Применение специализированной утилиты Wireshark позволяет наблюдать структуру передаваемых кадров, пакетов и сегментов данных различных сетевых протоколов. При выполнении УИР требуется анализировать последовательности команд и назначение служебных данных, используемых для организации обмена данными в следующих протоколах: ARP, DNS, FTP, HTTP, DHCP.
 
+\textbf{Вариант:} www.alexeylapin.ru, так как в нем лексически входит фамилия студента.
+\section{Анализ трафика утилиты ping}
+Команда, запускаемая в терминале, выглядит следующим образом:
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part1/ping-cmd.png}
+\end{figure}
+Аргумент -s отвечает за размер пакета.
+
+Аргумент -c отвечает за количество пакетов.
+\begin{itemize}
+    \item {
+\textbf{Имеет ли место фрагментация исходного пакета, какое поле на это указывает?}
+
+ІСМР пакет передается внутри пакета IP, который передается по Ethernet. 
+Минимальный размер кадра Ethernet — 64 байта, максимальный — 1518 байт. 
+Соответственно, при передаче пакет IСМР фрагментируется.
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part1/ping6000.png}
+    \caption{Результат при передаче 6000 байт}
+\end{figure}
+Фрагменты состоят из IPv4 пакетов, которые содержат 1480 байт данных, 20 байт заголовок IP, 14 байт заголовок Ethernet. Всего размер Ethernet кадра равен 1514 байт.
+
+Сам заголовок Ethernet I содержит МАС адреса - 12 байт и 2 байта,
+отвечающие за тип протокола выше (IPv4).
+    }
+    \item {
+        \textbf{Какая информация указывает, является ли фрагмент пакета последним или промежуточным?}
+        
+        Флаг «More fragments»» в пакете IPv4 сигнализирует о том, последуют ли за ним дополнительные фрагменты или это последняя часть фрагментированного пакета.
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part1/icmp-flags.png}
+        \end{figure}
+    }
+    \item {
+        \textbf{Чему равно количество фрагментов при передаче ping-пакетов?}
+        Так как размер кадра Ethernet ограничен 1518 байтами. 
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part1/IEEE-standart.png}
+            \caption{Из IEEE Standard for Ethernet (IEEE Std 802.3™-2015)}
+        \end{figure}
+
+        Так в каждый пакет будет умещаться IPv4 максимум 1480 байт данных, потому что пакет IPv4 вкладывается в кадр Ethernet.
+
+        Количество фрагментов = ceil(Длина сообщения (байт) / 1480 байт (фрагмент))
+        ceil() - округление вверх.
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part1/fragments-count.png}
+            \caption{Количество фрагментов при передачи сообщения 6000 байт}
+        \end{figure}
+    }
+    \item {
+        \textbf{Построить график, в котором на оси абсцисс находится размер\_пакета, а по оси ординат – количество фрагментов, на которое был разделён каждый ping-пакет.}
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part1/fragPerSize.png}
+            \caption{Количество фрагментов от размера пакета}
+        \end{figure}
+    }
+    \item {
+        \textbf{Как изменить поле TTL с помощью утилиты ping?}
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part1/ttl.png}
+            \caption{Изменить ttl ping в Unix}
+        \end{figure}
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part1/ttl2.png}
+            \caption{Изменить ttl ping для multicast в Unix}
+        \end{figure}
+
+    }
+    \item {
+        \textbf{Что содержится в поле данных ping-пакета?}
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part1/ping-data.png}
+        \end{figure}
+        Мусор в виде ASCII символов, если это так можно трактовать. Другими
+        словами, однобайтовые слова, последовательно идущие друг за другом и
+        увеличивающиеся на единицу.
+    }
+\end{itemize}
+\section{Анализ трафика утилиты tracert (traceroute)}
+traceroute отправляет пакет с TTL=1 и смотрит адрес ответившего узла, дальше TTL=2, TTL=3 и так пока не достигнет цели. 
+При TTL=0 пакет уничтожается, а отправителю отсылается сообщение Time Exceeded.
+Каждый раз отправляется по три пакета и для каждого из них измеряется время прохождения.
+
+По умолчанию traceroute отправляет UPD дейтаграммы, но мы можем изменить на ICMP с помощью аргумента -I. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part2/traceroute.png}
+\end{figure}
+В соответствии с документацией, звездочки могут означать, что маршрутизатор в течение некоторого времени не отвечает, временно перегружен или некоторые маршрутизаторы специально не реагируют на данные сообщения, поскольку им запрещено это делать. Поэтому, даже если выставить большое значение TTL, мы все равно можем не достичь конечного узла в некоторых случаях.
+
+\begin{itemize}
+    \item {
+        \textbf{Сколько байт содержится в заголовке IP? Сколько байт содержится в поле данных?}
+
+        В заголовке: 20 байт
+
+        В данных: 20 байт
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part2/ip-size.png}
+        \end{figure}
+    }
+    \item{
+        \textbf{Как и почему изменяется поле TTL в следующих друг за другом ICMPпакетах tracert? Для ответа на этот вопрос нужно проследить изменение TTL при передаче по маршруту, состоящему из более чем двух хопов.}
+    
+        Для определения пути, traceroute отправляет пакеты с TTL, начиная от 1 и увеличивая на 1 через каждые 1-3 пакета.
+        Когда TTL в маршрутизаторе становится равным 0, тот посылает ICMP сообщение с информацией о том, что TTL превышен. Таким образом, по умолчанию сначала отправляется пакет с TTL, равным 1, затем с TTL, равным 2, и так далее, пока не достигнем конечного узла.
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part2/ttl-exceeded.png}
+        \end{figure}
+        }
+    \item{
+        \textbf{Чем отличаются ICMP-пакеты, генерируемые утилитой tracert, от ICMP пакетов, генерируемых утилитой ping (см. предыдущее задание).}
+
+        В отличие от пакетов, генерируемых утилитой ping, пакеты, генерируемые
+        утилитой traceroute, в поле данных содержат нули.
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part2/tracer-data.png}
+        \end{figure}
+    }
+    \item {
+        \textbf{Чем отличаются полученные пакеты «ICMP reply» от «ICMP error» и зачем нужны оба этих типа ответов?}
+
+        Различные значения в поле Type. Error возвращает ошибочные ответы, reply – обычный ответ на запрос от сервера. Оба типа необходимы, чтобы различать причину истечения TTL: если хост успешно достигнут, приходит reply, а если произошла ошибка – error.
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part2/icmp-error.png}
+            \caption{ICMP Error}
+        \end{figure}
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part2/icmp-reply.png}
+            \caption{ICMP Reply}
+        \end{figure}
+
+    }
+
+    \item {
+        \textbf{Что изменится в работе tracert, если убрать ключ «-d»? Какой дополнительный трафик при этом будет генерироваться?}
+
+        Из документации WINDOWS:
+
+        Ключ -d предотвращает попытки команды tracert преобразовывать IP-адреса промежуточных маршрутизаторов в имена хостов. Таким образом, в выводе команды не будут отображаться имена хостов, через которые проходит IP-пакет.
+
+        Ключ -d в версии Unix, позволяет включить отладку на уровне сокета
+    }
+    \section{Анализ HTTP-трафика}
+
+    Так как на выбраном сайте по варианту весь контент динамический, а значит not modified там быть не может.
+    
+    Возьмем другой сайт: http://math.gsu.by/wp-content/uploads/courses/networks/r5.1.html
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics*[width=\textwidth]{image/part3/http.png}
+    \end{figure}
+
+    Как можем увидеть, протокол НТТР
+    является прикладным протоколом, и поэтому работает поверх протокола ТСР.
+    
+    \begin{figure}[H]
+        \centering
+        \includegraphics*[width=\textwidth]{image/part3/get-request.png}
+    \end{figure}
+    Сообщение прокола представляется в виде:
+    \begin{itemize}
+        \item <Тип запроса (GET/POST) > <путь относительно корня>
+        \item ‹Протокол/версия>
+        \item Затем с новой строки (переноса) идут значения вида ключ:значение
+        \item После идет тело запроса, может отсутвовать
+    \end{itemize}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics*[width=\textwidth]{image/part3/http-response.png}
+    \end{figure}
+    Ответ выглядит в виде:
+    \begin{itemize}
+        \item <Протокол/версия> <Статус> ‹перенос>
+        \item Заголовок вида ключ-значение
+        \item Тело запроса
+    \end{itemize}
+    \begin{figure}[H]
+        \centering
+        \includegraphics*[width=\textwidth]{image/part3/304.png}
+    \end{figure}
+    При вторичном посещении сайта получаем заголовок «HTTP/1.1 304 Not Modified». Он означает, что не нужно отправлять тело вместе с
+ним (таким образом экономится пропускная способность). Данные о сайте остались в кэше браузера.
+
+\end{itemize}
+
+\section{Анализ DNS-трафика}
+Очищаем кеш DNS на macOS командой:
+
+sudo dscacheutil -flushcache
+
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part4/dns.png}
+\end{figure}
+
+\begin{itemize}
+    \item {
+        \textbf{Почему адрес, на который отправлен DNS-запрос, не совпадает с адресом посещаемого сайта?}
+
+        Для того, чтобы получить IP адрес сайта отправляется запрос на DNS сервер,
+который возращает IP адрес уже сайта. 
+    }
+    \item{
+        \textbf{Какие бывают типы DNS-запросов?}
+
+        \begin{itemize}
+            \item Прямой — запрос на преобразование имени (символьного адреса) хоста в
+            его IР-адрес.
+            \item Обратный - запрос на преобразование адреса хоста в его имя.
+            \item Рекурсивный - DNS-сервер опрашивает серверы (в порядке убывания
+            уровня зон в имени), пока не найдёт ответ или не обнаружит, что домен не
+            существует.
+            \item Итеративный - Данные запросы передаются между DNS-серверами, когда один из них не имеет соответствующих записей. Таким образом, инициатор запроса будет контактировать с сервером, который имеет нужную запись.
+        \end{itemize}
+
+        Типы записей (Ресурсные записи): 
+        \begin{enumerate}
+            \item А — получение IPv4
+            \item АААА - получение IPv6
+            \item CNAME - получение канонического имени
+            \item МХ - получение информации о почтовых серверах, ответственных за
+            обработку почту для данного домена
+            \item NS (Name Server) - вернуть список DNS серверов, ответственных за
+            данный домен
+            \item TXT — любая текстовая информация о домене
+            \item SPF — список серверов, которым позволено отправлять письма от имени указанного домена
+            \item SOA — исходная запись зоны, в которой указаны сведения о сервере.
+            \item PTR - обратная DNS-запись или запись указателя связывает ІР-адрес
+            хоста с его каноническим именем.
+        \end{enumerate}
+        Подробнее: \href{https://help.reg.ru/support/dns-servery-i-nastroyka-zony/nastroyka-resursnykh-zapisey-dns/chto-takoye-resursnyye-zapisi-dns#8}{Что такое ресурсные записи DNS - Reg.ru}
+    }
+    \item {
+        \textbf{В какой ситуации нужно выполнять независимые DNS-запросы для получения содержащихся на сайте изображений?}
+
+        \begin{itemize}
+            \item Если изображения хранятся на отдельном сервере или поддомене
+            \item Используется CDN (Content Derivery Network), где ресурсы могут
+            храниться на разных серверах
+        \end{itemize}
+    }
+\end{itemize}
+
+\section{Анализ ARP-трафика}
+
+Очищаем таблицу МАС адресов:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part5/arp-cmd.png}
+\end{figure}
+
+Как можно заметить ниже ARP запросы посылаются как от маршрутизатора
+(192.168.0.1), так и от компьютера (192.168.0.159). Broadcast означает, что
+данный запрос предназначен всем узлам в данной локальной сети.
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part5/arp-req.png}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part5/arp.png}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part5/arp-2.png}
+\end{figure}
+
+\begin{itemize}
+    \item {
+        \textbf{Какие МАС-адреса присутствуют в захваченных пакетах ARP протокола? Что означают эти адреса? Какие устройства они идентифицируют?}
+        \begin{itemize}
+            \item TpLinkTechno\_04:fb:f4 (18:a6:f7:04:fb:f4) -- маршрутизатор
+            \item 00:00:00:00:00:00 -- broadcast-адрес
+            \item Apple\_6e:69:07 (5c:e9:1e:6e:69:07) -- компьютера
+        \end{itemize}
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part5/arp-rq.png}
+        \end{figure}
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part5/arp-reply.png}
+        \end{figure}
+        
+        При запросе присутствует МАС адрес отправителя и Target это broadcast-адресс
+
+        При ответе присутствуют МАС адрес отправителя и Target того устройства, которое делало запрос.
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part5/factory-def.png}
+        \end{figure}
+
+    }
+    \item {
+        \textbf{Какие МАС-адреса присутствуют в захваченных HTTP-пакетах и что означают эти адреса? Что означают эти адреса? Какие устройства они идентифицируют?}
+
+        В HTTP-пакетах содержатся те же MAC-адреса, что и в ARP-запросе. Они служат для идентификации отправителя и получателя HTTP-пакета.
+    }
+
+    \item {
+        \textbf{Для чего ARP-запрос содержит IP-адрес источника?}
+
+        Чтобы узел-получатель мог добавить информацию об узле-отправителе в свою таблицу ARP. С помощью этой таблицы получатель сможет сопоставить IP с MAC-адрессом при отправке следующих пакетов, без необходимости снова посылать ARP-запрос. 
+    }
+\end{itemize}
+
+\section{Анализ трафика утилиты nslookup}
+
+NSLOOKUP — это утилита, которая позволяет через командную строку узнать содержимое DNS. Утилита поможет:
+\begin{itemize}
+    \item узнать IP-адрес,
+    \item узнать A, NS, SOA, MX-записи для домена.
+\end{itemize}
+
+С помощью А-записи домен прикрепляется к IP-адресу. Таким образом, А-запись позволяет найти IP.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part6/nslookupa.png}
+\end{figure}
+
+Утилита NSLOOKUP позволяет определить, какие NS-серверы использует сайт.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part6/nslookupns.png}
+\end{figure}
+
+В ответе на любую команду утилита показывает, с какого сервера была получена информация. Ответ приходит от серверов двух типов:
+
+\begin{itemize}
+    \item authoritative
+    \item non-authoritative
+\end{itemize}
+
+Authoritative answer (авторитетный ответ) – это ответ, который получен от основного (официального) сервера. Non-authoritative answer (неавторитетный ответ) – это ответ от промежуточного сервера.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part6/dns.png}
+\end{figure}
+
+\begin{itemize}
+    \item {
+        \textbf{Чем различается трасса трафика в п.2 и п.4, указанных выше?}
+        \begin{itemize}
+            \item При запуске в п.2 утилита ищет IP-адрес хоста (запись типа А (IPv4) или АААА
+            (IPv6)).
+            \item При запуске в п.4 утилита ищет Name Server для запрашиваемого хоста.
+        \end{itemize}
+
+        NS-запись (Authoritative name server) указывает на DNS-серверы, которые отвечают за хранение остальных ресурсных записей домена. Количество NS записей должно строго соответствовать количеству всех обслуживающих его серверов. Критически важна для работы службы DNS.
+    }
+    \item {
+        \textbf{Что содержится в поле «Answers» DNS-ответа?}
+        
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part6/respA.png}
+            \caption{Answer для типа A}
+        \end{figure}
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part6/respNS.png}
+            \caption{Answer для типа NS}
+        \end{figure}
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part6/respNS2.png}
+            \caption{Answer для типа NS}
+        \end{figure}
+        \begin{itemize}
+            \item NAME - имя хоста.
+            \item TYPE - тип ресурсной записи. Определяет формат и назначение данной
+            ресурсной записи.
+            \item CLASS — класс ресурсной записи. Обычно IN для Internet (Код 0x0001)
+            \item TTL - (Time To Live) - допустимое время хранения данной ресурсной записи в кэше неответственного DNS-сервера.
+            \item Data length - длина поля данных.
+            \item Name Server - dns сервер с которого получена информация
+            \item Address - запрашиваемый IP адресс
+        \end{itemize}
+        Данные запрашиваемого типа DNS-записи: для А - IPv4-адрес, для NS - список
+authoritative Name Server.
+        
+    }
+    \item {
+        \textbf{Каковы имена серверов, возвращающих авторитативный (authoritative) отклик?}
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part6/respNS.png}
+            \caption{Имена авторитативных серверов}
+        \end{figure}
+
+        DNS-серверы, которые отвечают за хранение остальных ресурсных записей домена. 
+        То есть они являются ответственными
+за зону, в которой описана информация, необходимая DNS-клиенту.
+    }
+
+\end{itemize}
+
+\section{Анализ FTP-трафика}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part7/ftp.png}
+    \caption{Получим, что-нибудь gitlab}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part7/ftp-ws.png}
+\end{figure}
+\begin{itemize}
+    \item {
+        \textbf{Сколько байт данных содержится в пакете FTP-DATA?}
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part7/ftp-data-size.png}
+        \end{figure}
+        242 байта
+
+    }
+    \item {
+        \textbf{Как выбирается порт транспортного уровня, который используется для передачи FTP-пакетов?}
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part7/port-req.png}
+            \caption{FTP}
+        \end{figure}
+
+        Для протокола FTP стандартный порт для управления - 21.
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics*[width=\textwidth]{image/part7/port-data.png}
+            \caption{FTP}
+        \end{figure}
+
+        Для FTP-DATA может быть выбран любой порт, либо по умолчанию используется 20.
+    }
+    \item {
+        \textbf{Чем отличаются пакеты FTP от FTP-DATA?}
+
+        FTP используется для управления каналом: аутентификации, навигации и
+        общего управления передачей файлов.
+
+        FTP-DATA - отвечает за передачу фактических данных файла между клиентом и
+        сервером.
+
+        Это можно увидеть по описанию сообщений в Wireshark.
+    }
+\end{itemize}
+\section{Анализ DHCP-трафика}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part8/ip.png}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part8/dhcp.png}
+\end{figure}
+\begin{itemize}
+    \item {
+        \textbf{Чем различаются пакеты «DHCP Discover» и «DHCP Request»?}
+
+        Оба запроса выполняются клиентом, DHCP Discover ищет DHCP-сервер в своей
+        канальной среде, а DHCP Request принимает предлагаемый адрес и уведомляет
+        DHCP-сервер об этом.
+    }
+    \item {
+        \textbf{Как и почему менялись MAC- и IP-адреса источника и назначения в переданных DHCP-пакетах.}
+
+        \begin{enumerate}
+            \item DHCP-discover - инициируется клиентом. МАС адрес отправителя —
+            компьютер, IР адрес - 0.0.0.0 (не задан); МАС адрес получателя — broadcast,
+            IP адрес — 255.255.255.255 (limited broadcast — все устройства в локальной
+            сети).
+            \item DHCP-offer - инициируется сервером. МАС адрес и IP адрес отправителя -
+            сервера; IP адрес получателя — предложенный, MAC адрес получателя — тот кто запросил
+            \item DHCP-request - инициируется клиентом. МАС адрес отправителя —
+            компьютер, IР адрес - 0.0.0.0 (не задан); МАС адрес получателя — broadcast,
+            IP адрес — 255.255.255.255 (limited broadcast)
+            \item DHCP-ack - инициируется сервером. МАС адрес и IP адрес отправителя —
+            сервера; МАС адрес получателя — компьютер, IP адрес — запрошенный в
+            DHCP-request.
+        \end{enumerate}
+    }
+    \item {
+        \textbf{Каков IP-адрес DHCP-сервера?}
+        10.211.55.1
+    }
+    \item {
+        \textbf{Что произойдёт, если очистить использованный фильтр «bootp»?} Поскольку это был единственный фильтр, то будут просто отображаться все
+        запросы-ответы.
+    }
+\end{itemize}
+
+\section{Структуры наблюдаемых пакетов заголовков}
+\textbf{Ethernet II}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/ethernet2.jpeg}
+\end{figure}
+\begin{itemize}
+    \item Preamble – последовательность бит, по сути, не являющаяся частью ETH заголовка определяющая начало Ethernet фрейма.
+    \item DA (Destination Address) – MAC адрес назначения, может быть юникастом, мультикастом, бродкастом.
+    \item SA (Source Address) – MAC адрес отправителя. Всегда юникаст.
+    \item E-TYPE (EtherType) – Идентифицирует L3 протокол (к примеру 0x0800 – Ipv4, 0x86DD – IPv6, 0x8100- указывает что фрейм тегирован заголовком 802.1q, и т.д. Список всех EtherType — standards.ieee.org/develop/regauth/ethertype/eth.txt )
+    \item Payload – L3 пакет размером от 46 до 1500 байт
+    \item FCS (Frame Check Sequences) – 4 байтное значение CRC используемое для выявления ошибок передачи. Вычисляется отправляющей стороной, и помещается в поле FCS. Принимающая сторона вычисляет данное значение самостоятельно и сравнивает с полученным.
+\end{itemize}
+\textbf{ARP}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/arp.png}
+\end{figure}
 \begin{enumerate}
-    \item построить модели компьютерных сетей, представляющих собой несколько подсетей, объединенных в одну автономную сеть, в соответствии с заданными вариантами топологий, представленными в Приложении (В1 -- В6);
-    \item выполнить настройку сети при статической маршрутизации , заключающуюся в присвоении IP-адресов интерфейсам сети и ручном заполнении таблиц маршрутизации;
-    \item промоделировать работу сети при использовании динамической маршрутизации на основе протокола RIP и при автоматическом распределении IP-адресов на основе протокола DHCP;
-    \item выполнить тестирование построенных сетей путем проведения экспериментов по передаче данных на основе протоколов UDP и TCP;
-    \item проанализировать результаты тестирования и сформулировать выводы об эффективности сетей с разными топологиями;
-    \item сохранить разработанные модели локальных сетей для демонстрации процессов передачи данных при защите лабораторной работы.
+    \item {Hardware Type - 16-битное поле, определяющее “тип канальной среды”. Наиболее часто используемые типы представлены в таблице ниже
+    \begin{figure}[H]
+        \centering
+        \includegraphics*[width=0.3\textwidth]{image/part10/arp-tab1.png}
+    \end{figure}
+    }
+    \item Protocol Type - 16-битное поле, определяющее протокол сетевого уровня, который отправитель связывает с идентификатором канала передачи данных. Для протокола IP версии 4 значение данного поля равно 0x0800
+    \item Hardware Address Length - 8-битное поле, определяющее длину идентификатора канальной среды в байтах. MAC-адреса имеет длину 48 бит или 6 байт.
+    \item Protocol Address Length - 8-битное поле, определяющее длину адреса сетевого уровня в байтах. IP-адреса имеет длину 32 бита или 4 байта.
+    \item {Operation - 16-битное поле, которое определяет какой тип пакета ARP используется:
+    \begin{itemize}
+        \item ARP Request - 1
+        \item ARP Reply - 2
+        \item Reverse ARP Request - 3
+        \item Reverse ARP Reply - 4
+        \item Inverse ARP Request - 8
+        \item Inverse ARP Reply - 9
+    \end{itemize}
+    }
+    \item Последние 20 байт приходятся на адресацию канальной среды и сетевого уровня источника и назначения запроса (MAC-адрес 6 байт * 2 + IP-адрес 4 байт * 2 = 20)
 \end{enumerate}
+\textbf{IPv4}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/ip4.png}
+\end{figure}
+\textbf{ICMP}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/icmp.png}
+\end{figure}
+\textbf{HTTP}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/http.png}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/http2.png}
+\end{figure}
+\textbf{DNS}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/dns.png}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/dns-pack.png}
+\end{figure}
+\begin{enumerate}
+    \item Header — Заголовок DNS пакета, состоящий из 12 октет.
+    \item Question section — в этой секции DNS-клиент передает запросы DNS-серверу сообщая о том, для какого имени необходимо разрешить (зарезолвить) запись DNS, а также какого типа (NS, A, TXT и т.д.). Сервер при ответе, копирует эту информацию и отдает клиенту обратно в этой же секции.
+    \item Answer section — сервер сообщает клиенту ответ или несколько ответов на запрос, в котором сообщает вышеуказанные данные.
+    \item Authoritative Section — содержит сведения о том, с помощью каких авторитетных серверов было получена информация включенная в секцию DNS-ответа.
+    \item Additional Record Section — дополнительные записи, которые относятся к запросу, но не являются строго ответами на вопрос.
+\end{enumerate}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/dns-header.png}
+\end{figure}
+\begin{enumerate}
+    \item ID (16 бит) — данное поле используется как уникальный идентификатор транзакции. Указывает на то, что пакет принадлежит одной и той же сессии “запросов-ответов” и занимает 16 бит.
+    \item QR (1 бит) — данный бит служит для индентификации того, является ли пакет запросом (QR = 0) или ответом (QR = 1).
+    \item {Opcode (4 бита) — с помощью данного кода клиент может указать тип запроса, где обычное значение:
+    \begin{itemize}
+        \item 0 — стандартный запрос,
+        \item 1 — инверсный запрос,
+        \item 2 — запрос статуса сервера.
+        \item 3-15 – зарезервированы на будущее.
+    \end{itemize}
+    }
+    \item AA (1 бит) — данное поле имеет смысл только в DNS-ответах от сервера и сообщает о том, является ли ответ авторитетным либо нет.
+    \item TC (1 бит) — данный флаг устанавливается в пакете ответе в том случае если сервер не смог поместить всю необходимую информацию в пакет из-за существующих ограничений.
+    \item RD (1 бит) — этот однобитовый флаг устанавливается в запросе и копируется в ответ. Если он флаг устанавливается в запросе — это значит, что клиент просит сервер не сообщать ему промежуточных ответов, а вернуть только IP-адрес.
+    \item RA (1 бит) — отправляется только в ответах, и сообщает о том, что сервер поддерживает рекурсию
+    \item Z (3 бита) — являются зарезервированными и всегда равны нулю.
+    \item {RCODE (4 бита) — это поле служит для уведомления клиентов о том, успешно ли выполнен запрос или с ошибкой.
+        \begin{itemize}
+            \item 0 — значит запрос прошел без ошибок;
+            \item 1 — ошибка связана с тем, что сервер не смог понять форму запроса;
+            \item 2 — эта ошибка с некорректной работой сервера имен;
+            \item 3 — имя, которое разрешает клиент не существует в данном домене;
+            \item 4 — сервер не может выполнить запрос данного типа;
+            \item 5 — этот код означает, что сервер не может удовлетворить запроса клиента в силу административных ограничений безопасности.
+        \end{itemize}
+    }
+    \item QDCOUNT(16 бит) – количество записей в секции запросов
+    \item ANCOUNT(16 бит) – количество записей в секции ответы
+    \item NSCOUNT(16 бит) – количество записей в Authority Section
+    \item ARCOUNT(16 бит) – количество записей в Additional Record Section
+\end{enumerate}
+Подробнее: \href{https://habr.com/ru/articles/478652/}{Структура DNS пакета - habr.com}
+
+
+\textbf{Структура DNS пакета}
+\begin{figure}[H]
+    \centering
+    \includegraphics*[width=\textwidth]{image/part10/dhcp-structure.jpg}
+\end{figure}
+\begin{itemize}
+    \item Operation code - тип DHCP-сообщения. Если значение 0×01 – запрос к серверу, иначе — оно являет ответом DHCP-сервера.
+    \item Hardware Type - тип адреса на канальном уровне. DHCP может работать поверх различных протоколов на канальном уровне, поэтому нужно указывать на каком именно.
+    \item Hardware Length - длина аппаратного адреса в байтах.
+    \item Hops - количество промежуточных маршрутизаторов (так называемых агентов ретрансляции DHCP), через которые прошло сообщение.
+    \item Transaction ID - Уникальный идентификатор транзакции в 4 байта, генерируемый клиентом в начале процесса получения адреса.
+    \item Seconds Elapsed - Время в секундах с момента начала процесса получения адреса. Может не использоваться (в этом случае оно устанавливается в 0)
+    \item Flags - Поле для флагов — специальных параметров протокола DHCP
+    \item Client IP Address - ip-адрес клиента. Заполняется только в том случае, если клиент уже имеет собственный ip-адрес (это возможно, если клиент выполняет процедуру обновления адреса по истечении срока аренды).
+    \item Your ID Address - Новый ip-адрес клиента, предложенный сервером.
+    \item Server IP Address - IP-адрес сервера.
+    \item Client Hardware Address - MAC клиента.
+    \item Server Hostname – доменное имя сервера (если присуттвует).
+    \item Boot File - служит указателем для бездисковых рабочих станций о имени файла инициализации на сервере.
+    \item Options – информация для динамической конфигурации хоста.
+\end{itemize}
+
+\section{Выводы}
+В ходе выполнения лабораторной работы мною были получены навыки работы с анализатором трафика
+Wireshark, где были захвачены и изучены пакеты разных протоколов, их расположение по уровням TCP/IP
+модели, назначение и структура. 
+
+Убедился в том, каким образом представляются пакеты, как они оборачивают при проходе от соседних уровней или одного и того же уровня.
+
 
 \end{document}

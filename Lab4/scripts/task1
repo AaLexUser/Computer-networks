@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Default host is set to alexlapin.com unless provided as a command argument
+host=${1:-www.alexeylapin.ru}
+
+for size in $(seq 100 100 6000); do
+  echo "Ping with packet size $size to $host:"
+  
+  if ! ping -s $size -c 1 "$host" &>/dev/null; then
+    echo "Ping failed for packet size $size."
+  else
+    ping -s $size -c 1 "$host"
+  fi
+  
+  echo 
+done
